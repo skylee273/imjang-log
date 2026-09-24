@@ -110,7 +110,7 @@ export default function VisitTable({ visits, selectedId, sort, query, onSort, on
                     {v.pyeong ? ` · ${v.pyeong}평` : ''}
                   </span>
                 </td>
-                <td className="opt muted">
+                <td className="opt muted region">
                   <Highlight text={v.region} query={query} />
                 </td>
                 <td className="num price">

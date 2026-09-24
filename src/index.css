@@ -31,6 +31,8 @@
 body {
   margin: 0;
   background: var(--bg);
+  word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 
 button,
@@ -596,6 +598,10 @@ h1 {
 
 .table .muted {
   color: var(--muted);
+}
+
+.table td.region {
+  white-space: nowrap;
 }
 
 .table .price {
