@@ -1,0 +1,33 @@
+[
+  {
+    "id": "seed-godeok-welllife",
+    "date": "2026-09-24",
+    "name": "고덕 웰라이프",
+    "region": "서울 강동구 고덕동",
+    "dealType": "전세",
+    "price": 20900,
+    "lat": 37.5572,
+    "lng": 127.1545
+  },
+  {
+    "id": "seed-misa-hillstate",
+    "date": "2026-09-24",
+    "name": "미사 힐스테이트",
+    "region": "경기 하남시 망월동",
+    "dealType": "월세",
+    "price": 500,
+    "lat": 37.5636,
+    "lng": 127.1935
+  },
+  {
+    "id": "seed-godeok-gracium",
+    "date": "2026-09-24",
+    "name": "고덕 그라시움",
+    "region": "서울 강동구 고덕동",
+    "dealType": "전세",
+    "price": 80000,
+    "pyeong": 25,
+    "lat": 37.5541,
+    "lng": 127.1601
+  }
+]

@@ -2,13 +2,35 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import MapView from './components/MapView'
 import VisitTable, { type Sort, type SortKey } from './components/VisitTable'
 import VisitForm from './components/VisitForm'
+import SyncSettings from './components/SyncSettings'
+import { useSyncedVisits, type SyncStatus } from './useSyncedVisits'
 import { DEAL_TYPES, type DealType, type Visit } from './types'
-import { DEAL_COLOR, loadVisits, regionGroup, saveVisits } from './data'
+import { DEAL_COLOR, regionGroup } from './data'
 
 type DealFilter = DealType | '전체'
 
+const time = (d?: Date) => (d ? d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }) : '')
+
+function syncLabel(s: SyncStatus): string {
+  switch (s.state) {
+    case 'loading':
+      return 'GitHub에서 불러오는 중…'
+    case 'saving':
+      return 'GitHub에 저장 중…'
+    case 'synced':
+      return `GitHub 동기화됨 · ${time(s.at)}`
+    case 'readonly':
+      return '읽기 전용 · 토큰을 설정하면 GitHub에 저장돼요'
+    case 'local':
+      return s.detail ?? '이 기기에만 저장됨'
+    case 'error':
+      return s.detail ?? '동기화 오류'
+  }
+}
+
 export default function App() {
-  const [visits, setVisits] = useState<Visit[]>(loadVisits)
+  const { visits, update, status, token, saveToken, refresh } = useSyncedVisits()
+  const [showSync, setShowSync] = useState(false)
   const [selectedId, setSelectedId] = useState<string>()
   const [editing, setEditing] = useState<Visit | 'new' | null>(null)
   const [deal, setDeal] = useState<DealFilter>('전체')
@@ -19,8 +41,6 @@ export default function App() {
   const [view, setView] = useState<{ mode: 'korea' | 'fit'; nonce: number }>({ mode: 'fit', nonce: 0 })
   const [toast, setToast] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
-
-  useEffect(() => saveVisits(visits), [visits])
 
   useEffect(() => {
     if (!toast) return
@@ -66,23 +86,35 @@ export default function App() {
     setSort((s) => (s.key === key ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: key === 'date' ? 'desc' : 'asc' }))
 
   const onSave = (v: Visit) => {
-    setVisits((list) => (list.some((x) => x.id === v.id) ? list.map((x) => (x.id === v.id ? v : x)) : [...list, v]))
+    const exists = visits.some((x) => x.id === v.id)
+    update(
+      (list) => (exists ? list.map((x) => (x.id === v.id ? v : x)) : [...list, v]),
+      `${exists ? '임장 수정' : '임장 추가'}: ${v.name}`,
+    )
     setSelectedId(v.id)
-    setToast(editing === 'new' ? '임장 기록을 추가했어요' : '저장했어요')
+    setToast(exists ? '저장했어요' : '임장 기록을 추가했어요')
     setEditing(null)
   }
 
   const onDelete = (id: string) => {
-    setVisits((list) => list.filter((x) => x.id !== id))
+    const name = visits.find((x) => x.id === id)?.name ?? ''
+    update((list) => list.filter((x) => x.id !== id), `임장 삭제: ${name}`)
     setSelectedId(undefined)
     setEditing(null)
     setToast('삭제했어요')
   }
 
-  const toggleStar = (id: string) =>
-    setVisits((list) => list.map((x) => (x.id === id ? { ...x, starred: !x.starred } : x)))
+  const toggleStar = (id: string) => {
+    const v = visits.find((x) => x.id === id)
+    if (!v) return
+    update(
+      (list) => list.map((x) => (x.id === id ? { ...x, starred: !x.starred } : x)),
+      `관심 ${v.starred ? '해제' : '표시'}: ${v.name}`,
+    )
+  }
 
   const closeForm = useCallback(() => setEditing(null), [])
+  const closeSync = useCallback(() => setShowSync(false), [])
 
   const exportJson = () => {
     const blob = new Blob([JSON.stringify(visits, null, 2)], { type: 'application/json' })
@@ -97,7 +129,7 @@ export default function App() {
     try {
       const data = JSON.parse(await file.text()) as Visit[]
       if (!Array.isArray(data) || data.some((v) => !v.id || !v.name || v.lat == null || v.lng == null)) throw new Error()
-      setVisits(data)
+      update(() => data, `백업 파일에서 ${data.length}건 불러오기`)
       setView((s) => ({ mode: 'fit', nonce: s.nonce + 1 }))
       setToast(`${data.length}건을 불러왔어요`)
     } catch {
@@ -228,8 +260,19 @@ export default function App() {
       </section>
 
       <footer className="foot">
-        <span>데이터는 이 브라우저에 저장됩니다. 기기 간 이동은 백업 파일을 사용하세요.</span>
+        <button className={`sync sync--${status.state}`} onClick={() => setShowSync(true)}>
+          <i />
+          {syncLabel(status)}
+        </button>
         <div>
+          {status.state === 'error' ? (
+            <button className="link-btn" onClick={refresh}>
+              다시 시도
+            </button>
+          ) : null}
+          <button className="link-btn" onClick={() => setShowSync(true)}>
+            {token ? '동기화 설정' : 'GitHub 연결'}
+          </button>
           <button className="link-btn" onClick={exportJson}>
             백업 내보내기
           </button>
@@ -260,6 +303,18 @@ export default function App() {
           onSave={onSave}
           onDelete={onDelete}
           onClose={closeForm}
+        />
+      ) : null}
+
+      {showSync ? (
+        <SyncSettings
+          token={token}
+          onSave={(t) => {
+            saveToken(t)
+            setShowSync(false)
+            setToast(t ? 'GitHub에 연결했어요' : '토큰을 삭제했어요')
+          }}
+          onClose={closeSync}
         />
       ) : null}
 
