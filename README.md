@@ -22,7 +22,7 @@ vercel dev   # API 포함 로컬 실행 (npm run dev 는 화면만)
 
 ## 배포
 
-- **Vercel**: https://imjang-log-six.vercel.app — `main` 에 코드 push 시 자동 배포 (`data/` 만 바뀐 커밋은 빌드 생략)
+- **Vercel**: https://imjang-log-six.vercel.app — GitHub 연동, `main` 에 코드 push 시 자동 배포 (`data/` 만 바뀐 커밋은 빌드 생략)
 - GitHub Pages (보조): `npm run deploy`
 
 ## 기술 스택
