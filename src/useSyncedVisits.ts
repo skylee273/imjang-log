@@ -63,16 +63,20 @@ export function useSyncedVisits() {
     const message = msgs.length === 1 ? msgs[0] : msgs.length ? `임장 기록 ${msgs.length}건 수정` : '임장 기록 동기화'
     setStatus({ state: 'saving' })
     try {
-      try {
-        shaRef.current = await push(tok, visitsRef.current, shaRef.current, message)
-      } catch (e) {
-        if (!(e instanceof ConflictError)) throw e
-        // 다른 기기가 먼저 저장 → 원격과 합친 뒤 다시 저장
-        const remote = await pull(tok)
-        const merged = mergeById(remote.visits, visitsRef.current)
-        visitsRef.current = merged
-        setVisits(merged)
-        shaRef.current = await push(tok, merged, remote.sha, message)
+      for (let attempt = 0; ; attempt++) {
+        try {
+          shaRef.current = await push(tok, visitsRef.current, shaRef.current!, message)
+          break
+        } catch (e) {
+          if (!(e instanceof ConflictError) || attempt >= 3) throw e
+          // 다른 기기가 먼저 저장 → 원격과 합친 뒤 다시 저장 (GitHub 반영 지연 대비 잠깐 대기)
+          await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)))
+          const remote = await pull(tok)
+          const merged = mergeById(remote.visits, visitsRef.current)
+          visitsRef.current = merged
+          setVisits(merged)
+          shaRef.current = remote.sha
+        }
       }
       setDirty(false)
       setStatus({ state: 'synced', at: new Date() })
