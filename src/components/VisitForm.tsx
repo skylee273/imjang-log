@@ -1,7 +1,9 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { DEAL_TYPES, type DealType, type Visit } from '../types'
+import { DEAL_TYPES, type Analysis, type DealType, type Visit } from '../types'
 import { formatManwon, geocode, newId, type GeoResult } from '../data'
 import { PickerMap } from './MapView'
+import AnalysisEditor from './AnalysisEditor'
+import { hasAnalysis } from '../analysis'
 
 interface Props {
   initial?: Visit
@@ -15,6 +17,15 @@ const today = () => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
+const cleanAnalysis = (a: Analysis): Analysis => ({
+  ...a,
+  summary: a.summary?.trim() || undefined,
+  raw: a.raw?.trim() || undefined,
+  pros: a.pros?.length ? a.pros : undefined,
+  cons: a.cons?.length ? a.cons : undefined,
+  checks: a.checks?.length ? a.checks : undefined,
+})
+
 const toNum = (s: string) => (s.trim() === '' ? undefined : Number(s.replaceAll(',', '')))
 
 export default function VisitForm({ initial, onSave, onDelete, onClose }: Props) {
@@ -27,6 +38,7 @@ export default function VisitForm({ initial, onSave, onDelete, onClose }: Props)
   const [pyeong, setPyeong] = useState(initial?.pyeong?.toString() ?? '')
   const [rating, setRating] = useState(initial?.rating ?? 0)
   const [memo, setMemo] = useState(initial?.memo ?? '')
+  const [analysis, setAnalysis] = useState<Analysis>(initial?.analysis ?? {})
   const [starred, setStarred] = useState(initial?.starred ?? false)
   const [lat, setLat] = useState<number | undefined>(initial?.lat)
   const [lng, setLng] = useState<number | undefined>(initial?.lng)
@@ -87,6 +99,7 @@ export default function VisitForm({ initial, onSave, onDelete, onClose }: Props)
       pyeong: toNum(pyeong),
       rating: rating || undefined,
       memo: memo.trim() || undefined,
+      analysis: hasAnalysis(analysis) || analysis.raw?.trim() ? cleanAnalysis(analysis) : undefined,
       starred,
       lat: lat!,
       lng: lng!,
@@ -163,7 +176,12 @@ export default function VisitForm({ initial, onSave, onDelete, onClose }: Props)
             ) : null}
             <label className="row">
               <span>평형</span>
-              <input inputMode="decimal" value={pyeong} onChange={(e) => setPyeong(e.target.value)} placeholder="예) 25" />
+              <input
+                inputMode="decimal"
+                value={pyeong}
+                onChange={(e) => setPyeong(e.target.value)}
+                placeholder="예) 25"
+              />
               <em className="hint">평</em>
             </label>
             <div className="row">
@@ -182,18 +200,25 @@ export default function VisitForm({ initial, onSave, onDelete, onClose }: Props)
             </div>
             <label className="row">
               <span>관심 단지</span>
-              <input type="checkbox" className="switch" checked={starred} onChange={(e) => setStarred(e.target.checked)} />
+              <input
+                type="checkbox"
+                className="switch"
+                checked={starred}
+                onChange={(e) => setStarred(e.target.checked)}
+              />
             </label>
           </div>
 
+          <AnalysisEditor value={analysis} onChange={setAnalysis} />
+
           <div className="group">
             <label className="row col">
-              <span>메모</span>
+              <span>한 줄 메모</span>
               <textarea
                 value={memo}
                 onChange={(e) => setMemo(e.target.value)}
-                rows={3}
-                placeholder="역까지 도보 거리, 학군, 소음, 주차, 느낀 점…"
+                rows={2}
+                placeholder="표에 보일 짧은 메모"
               />
             </label>
           </div>
@@ -201,7 +226,8 @@ export default function VisitForm({ initial, onSave, onDelete, onClose }: Props)
           <div className="group">
             <div className="row col">
               <span>
-                위치 {lat != null ? <em className="ok">지정됨</em> : <em className="need">지도를 탭하거나 검색하세요</em>}
+                위치{' '}
+                {lat != null ? <em className="ok">지정됨</em> : <em className="need">지도를 탭하거나 검색하세요</em>}
               </span>
               <div className="search-line">
                 <input

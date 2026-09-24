@@ -3,6 +3,7 @@ import L from 'leaflet'
 import { MapContainer, Marker, Popup, TileLayer, useMap, useMapEvents } from 'react-leaflet'
 import type { Visit } from '../types'
 import { DEAL_COLOR, formatPrice, formatShort } from '../data'
+import { VerdictBadge } from './AnalysisView'
 
 // 지도는 서울(+ 하남·과천 등 맞닿은 생활권)로 한정
 const SEOUL_CENTER: L.LatLngTuple = [37.5563, 126.99]
@@ -10,8 +11,7 @@ const SEOUL_ZOOM = 11
 const SEOUL_BOUNDS = L.latLngBounds([37.33, 126.62], [37.8, 127.36])
 const MIN_ZOOM = 10
 const TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
-const TILE_ATTR =
-  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+const TILE_ATTR = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
 
 function pinIcon(v: Visit, selected: boolean) {
   const cls = ['pin', selected && 'pin--selected', v.starred && 'pin--starred'].filter(Boolean).join(' ')
@@ -99,6 +99,11 @@ export default function MapView({ visits, selectedId, onSelect, view, viewNonce 
                 <strong>{formatPrice(v)}</strong>
                 {v.pyeong ? <span>{v.pyeong}평</span> : null}
               </div>
+              {v.analysis?.verdict ? (
+                <div className="popup-verdict">
+                  <VerdictBadge verdict={v.analysis.verdict} />
+                </div>
+              ) : null}
               {v.memo ? <div className="popup-memo">{v.memo}</div> : null}
             </div>
           </Popup>

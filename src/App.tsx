@@ -83,7 +83,9 @@ export default function App() {
   }, [visits])
 
   const onSort = (key: SortKey) =>
-    setSort((s) => (s.key === key ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: key === 'date' ? 'desc' : 'asc' }))
+    setSort((s) =>
+      s.key === key ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: key === 'date' ? 'desc' : 'asc' },
+    )
 
   const onSave = (v: Visit) => {
     const exists = visits.some((x) => x.id === v.id)
@@ -128,7 +130,8 @@ export default function App() {
   const importJson = async (file: File) => {
     try {
       const data = JSON.parse(await file.text()) as Visit[]
-      if (!Array.isArray(data) || data.some((v) => !v.id || !v.name || v.lat == null || v.lng == null)) throw new Error()
+      if (!Array.isArray(data) || data.some((v) => !v.id || !v.name || v.lat == null || v.lng == null))
+        throw new Error()
       update(() => data, `백업 파일에서 ${data.length}건 불러오기`)
       setView((s) => ({ mode: 'fit', nonce: s.nonce + 1 }))
       setToast(`${data.length}건을 불러왔어요`)
@@ -155,11 +158,17 @@ export default function App() {
       <section className="stats">
         <div className="stat">
           <span>총 임장</span>
-          <strong>{stats.total}<small>건</small></strong>
+          <strong>
+            {stats.total}
+            <small>건</small>
+          </strong>
         </div>
         <div className="stat">
           <span>지역</span>
-          <strong>{stats.regions}<small>곳</small></strong>
+          <strong>
+            {stats.regions}
+            <small>곳</small>
+          </strong>
         </div>
         <div className="stat">
           <span>관심 단지</span>

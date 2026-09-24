@@ -1,6 +1,7 @@
-import { useEffect, useRef, type CSSProperties } from 'react'
+import { Fragment, useEffect, useRef, type CSSProperties } from 'react'
 import type { Visit } from '../types'
 import { DEAL_COLOR, formatPrice } from '../data'
+import AnalysisView, { VerdictBadge } from './AnalysisView'
 
 export type SortKey = 'date' | 'name' | 'region' | 'price' | 'pyeong' | 'rating'
 export interface Sort {
@@ -71,67 +72,79 @@ export default function VisitTable({ visits, selectedId, sort, query, onSort, on
                 </button>
               </th>
             ))}
+            <th className="opt verdict-col">판단</th>
             <th className="opt memo-col">메모</th>
             <th className="act-col" aria-label="편집" />
           </tr>
         </thead>
         <tbody>
           {visits.map((v) => (
-            <tr
-              key={v.id}
-              ref={(el) => {
-                if (el) rowRefs.current.set(v.id, el)
-                else rowRefs.current.delete(v.id)
-              }}
-              className={v.id === selectedId ? 'selected' : undefined}
-              onClick={() => onSelect(v.id)}
-            >
-              <td className="star-col">
-                <button
-                  className={`star ${v.starred ? 'on' : ''}`}
-                  aria-label={v.starred ? '관심 해제' : '관심 표시'}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onToggleStar(v.id)
-                  }}
-                >
-                  {v.starred ? '★' : '☆'}
-                </button>
-              </td>
-              <td className="date">{v.date.slice(2).replaceAll('-', '.')}</td>
-              <td className="name">
-                <span className={v.starred ? 'hl' : undefined}>
-                  <Highlight text={v.name} query={query} />
-                </span>
-                <span className="sub">
+            <Fragment key={v.id}>
+              <tr
+                ref={(el) => {
+                  if (el) rowRefs.current.set(v.id, el)
+                  else rowRefs.current.delete(v.id)
+                }}
+                className={v.id === selectedId ? 'selected' : undefined}
+                onClick={() => onSelect(v.id)}
+              >
+                <td className="star-col">
+                  <button
+                    className={`star ${v.starred ? 'on' : ''}`}
+                    aria-label={v.starred ? '관심 해제' : '관심 표시'}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onToggleStar(v.id)
+                    }}
+                  >
+                    {v.starred ? '★' : '☆'}
+                  </button>
+                </td>
+                <td className="date">{v.date.slice(2).replaceAll('-', '.')}</td>
+                <td className="name">
+                  <span className={v.starred ? 'hl' : undefined}>
+                    <Highlight text={v.name} query={query} />
+                  </span>
+                  <span className="sub">
+                    <Highlight text={v.region} query={query} />
+                    {v.pyeong ? ` · ${v.pyeong}평` : ''}
+                  </span>
+                </td>
+                <td className="opt muted">
                   <Highlight text={v.region} query={query} />
-                  {v.pyeong ? ` · ${v.pyeong}평` : ''}
-                </span>
-              </td>
-              <td className="opt muted">
-                <Highlight text={v.region} query={query} />
-              </td>
-              <td className="num price">
-                <span className="deal" style={{ '--c': DEAL_COLOR[v.dealType] } as CSSProperties}>
-                  {v.dealType}
-                </span>
-                <span className="price-val">{formatPrice(v)}</span>
-              </td>
-              <td className="num opt">{v.pyeong ? `${v.pyeong}평` : '-'}</td>
-              <td className="opt rating">{v.rating ? '●'.repeat(v.rating) + '○'.repeat(5 - v.rating) : '-'}</td>
-              <td className="opt memo-col muted">{v.memo ? <Highlight text={v.memo} query={query} /> : '-'}</td>
-              <td className="act-col">
-                <button
-                  className="link-btn"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onEdit(v)
-                  }}
-                >
-                  편집
-                </button>
-              </td>
-            </tr>
+                </td>
+                <td className="num price">
+                  <span className="deal" style={{ '--c': DEAL_COLOR[v.dealType] } as CSSProperties}>
+                    {v.dealType}
+                  </span>
+                  <span className="price-val">{formatPrice(v)}</span>
+                </td>
+                <td className="num opt">{v.pyeong ? `${v.pyeong}평` : '-'}</td>
+                <td className="opt rating">{v.rating ? '●'.repeat(v.rating) + '○'.repeat(5 - v.rating) : '-'}</td>
+                <td className="opt verdict-col">
+                  <VerdictBadge verdict={v.analysis?.verdict} />
+                </td>
+                <td className="opt memo-col muted">{v.memo ? <Highlight text={v.memo} query={query} /> : '-'}</td>
+                <td className="act-col">
+                  <button
+                    className="link-btn"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onEdit(v)
+                    }}
+                  >
+                    편집
+                  </button>
+                </td>
+              </tr>
+              {v.id === selectedId ? (
+                <tr className="detail-row">
+                  <td colSpan={11}>
+                    <AnalysisView analysis={v.analysis} onEdit={() => onEdit(v)} />
+                  </td>
+                </tr>
+              ) : null}
+            </Fragment>
           ))}
         </tbody>
       </table>
