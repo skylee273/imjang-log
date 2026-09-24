@@ -123,9 +123,9 @@ export interface GeoResult {
   lng: number
 }
 
-/** OpenStreetMap Nominatim 으로 장소 검색 */
+/** OpenStreetMap Nominatim 으로 장소 검색 (서울 우선) */
 export async function geocode(query: string): Promise<GeoResult[]> {
-  const url = `https://nominatim.openstreetmap.org/search?format=json&countrycodes=kr&accept-language=ko&limit=6&q=${encodeURIComponent(query)}`
+  const url = `https://nominatim.openstreetmap.org/search?format=json&countrycodes=kr&accept-language=ko&limit=6&viewbox=126.62,37.8,127.36,37.33&bounded=1&q=${encodeURIComponent(query)}`
   const res = await fetch(url)
   if (!res.ok) throw new Error('검색 실패')
   const rows = (await res.json()) as { display_name: string; lat: string; lon: string }[]

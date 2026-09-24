@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Visit } from './types'
 import { loadVisits, saveVisits } from './data'
-import { ConflictError, getToken, pull, push, setToken } from './github'
+import { ConflictError, getPassword, pull, push, setPassword } from './github'
 
 export type SyncState = 'loading' | 'synced' | 'saving' | 'readonly' | 'local' | 'error'
 export interface SyncStatus {
@@ -38,11 +38,11 @@ const mergeById = (remote: Visit[], local: Visit[]) => {
 
 /**
  * 임장 데이터: localStorage 캐시 + GitHub 저장소 data/visits.json 동기화.
- * 토큰이 있으면 변경 시 자동 커밋, 없으면 저장소 데이터를 읽기만 한다.
+ * 비밀번호가 맞으면 변경 시 서버(/api/visits)를 통해 자동 커밋, 아니면 읽기만 한다.
  */
 export function useSyncedVisits() {
   const [visits, setVisits] = useState<Visit[]>(loadVisits)
-  const [token, setTokenState] = useState(getToken)
+  const [password, setPasswordState] = useState(getPassword)
   const [status, setStatus] = useState<SyncStatus>({ state: 'loading' })
   const visitsRef = useRef(visits)
   const shaRef = useRef<string>(undefined)
@@ -56,7 +56,7 @@ export function useSyncedVisits() {
 
   const flush = useCallback(async () => {
     timer.current = undefined
-    const tok = getToken()
+    const tok = getPassword()
     if (!tok || !shaRef.current) return
     const msgs = messages.current
     messages.current = []
@@ -94,12 +94,17 @@ export function useSyncedVisits() {
   /** 저장소에서 최신 데이터 불러오기 */
   const refresh = useCallback(async () => {
     if (timer.current) return // 저장 대기 중이면 건너뜀
-    const tok = getToken()
+    const tok = getPassword()
     try {
       const remote = await pull(tok)
       shaRef.current = remote.sha
+      if (tok && !remote.canWrite) {
+        setVisits(remote.visits)
+        setStatus({ state: 'error', detail: '비밀번호가 맞지 않아요 · 읽기 전용' })
+        return
+      }
       if (isDirty()) {
-        // 이 기기에만 있는 변경 → 토큰이 있으면 올림
+        // 이 기기에만 있는 변경 → 비밀번호가 있으면 올림
         if (tok) {
           if (!messages.current.length) messages.current.push('이 기기의 변경 내용 동기화')
           schedule()
@@ -130,20 +135,20 @@ export function useSyncedVisits() {
       setVisits(fn)
       setDirty(true)
       messages.current.push(message)
-      if (getToken() && shaRef.current) schedule()
+      if (getPassword() && shaRef.current) schedule()
       else setStatus({ state: 'local', detail: '이 기기에만 저장됨' })
     },
     [schedule],
   )
 
-  const saveToken = useCallback(
-    (t: string) => {
-      setToken(t)
-      setTokenState(t)
+  const savePassword = useCallback(
+    (pw: string) => {
+      setPassword(pw)
+      setPasswordState(pw)
       refresh()
     },
     [refresh],
   )
 
-  return { visits, update, status, token, saveToken, refresh }
+  return { visits, update, status, password, savePassword, refresh }
 }

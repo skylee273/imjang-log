@@ -1203,23 +1203,4 @@ h1 {
   margin: -8px 4px 16px;
 }
 
-.row input.token-input {
-  text-align: left;
-  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
-  font-size: 15px;
-}
 
-.steps {
-  margin: 0 0 16px;
-  padding: 14px 16px 14px 34px;
-  background: var(--card);
-  border-radius: 12px;
-  font-size: 14px;
-  line-height: 1.9;
-}
-
-.steps a {
-  color: var(--blue);
-  font-weight: 600;
-  text-decoration: none;
-}

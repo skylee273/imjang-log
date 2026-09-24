@@ -4,8 +4,11 @@ import { MapContainer, Marker, Popup, TileLayer, useMap, useMapEvents } from 're
 import type { Visit } from '../types'
 import { DEAL_COLOR, formatPrice, formatShort } from '../data'
 
-const KOREA_CENTER: L.LatLngTuple = [36.35, 127.8]
-const KOREA_ZOOM = 7
+// 지도는 서울(+ 하남·과천 등 맞닿은 생활권)로 한정
+const SEOUL_CENTER: L.LatLngTuple = [37.5563, 126.99]
+const SEOUL_ZOOM = 11
+const SEOUL_BOUNDS = L.latLngBounds([37.33, 126.62], [37.8, 127.36])
+const MIN_ZOOM = 10
 const TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
 const TILE_ATTR =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -30,7 +33,7 @@ function FlyTo({ target }: { target?: Visit }) {
 }
 
 /** 외부에서 "전국 / 내 기록" 뷰 전환 */
-function ViewControl({ visits, view, nonce }: { visits: Visit[]; view: 'korea' | 'fit'; nonce: number }) {
+function ViewControl({ visits, view, nonce }: { visits: Visit[]; view: 'seoul' | 'fit'; nonce: number }) {
   const map = useMap()
   const first = useRef(true)
   // visits 변경 시 자동으로 재조정하지 않음 (사용자 조작 존중) → ref 로만 참조
@@ -46,7 +49,7 @@ function ViewControl({ visits, view, nonce }: { visits: Visit[]; view: 'korea' |
       const bounds = L.latLngBounds(visits.map((v) => [v.lat, v.lng]))
       map.fitBounds(bounds, { padding: [48, 48], maxZoom: 15, animate })
     } else {
-      map.setView(KOREA_CENTER, KOREA_ZOOM, { animate })
+      map.setView(SEOUL_CENTER, SEOUL_ZOOM, { animate })
     }
   }, [view, nonce, map])
   return null
@@ -56,7 +59,7 @@ interface Props {
   visits: Visit[]
   selectedId?: string
   onSelect: (id: string) => void
-  view: 'korea' | 'fit'
+  view: 'seoul' | 'fit'
   viewNonce: number
 }
 
@@ -64,7 +67,16 @@ export default function MapView({ visits, selectedId, onSelect, view, viewNonce 
   const selected = useMemo(() => visits.find((v) => v.id === selectedId), [visits, selectedId])
 
   return (
-    <MapContainer center={KOREA_CENTER} zoom={KOREA_ZOOM} className="map" scrollWheelZoom zoomControl={false}>
+    <MapContainer
+      center={SEOUL_CENTER}
+      zoom={SEOUL_ZOOM}
+      minZoom={MIN_ZOOM}
+      maxBounds={SEOUL_BOUNDS}
+      maxBoundsViscosity={1}
+      className="map"
+      scrollWheelZoom
+      zoomControl={false}
+    >
       <TileLayer url={TILE_URL} attribution={TILE_ATTR} maxZoom={19} />
       <ViewControl visits={visits} view={view} nonce={viewNonce} />
       <FlyTo target={selected} />
@@ -109,8 +121,11 @@ export function PickerMap({
   const has = lat != null && lng != null
   return (
     <MapContainer
-      center={has ? [lat, lng] : [37.5665, 126.978]}
-      zoom={has ? 15 : 11}
+      center={has ? [lat, lng] : SEOUL_CENTER}
+      zoom={has ? 15 : SEOUL_ZOOM}
+      minZoom={MIN_ZOOM}
+      maxBounds={SEOUL_BOUNDS}
+      maxBoundsViscosity={1}
       className="picker-map"
       zoomControl={false}
     >

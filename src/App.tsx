@@ -20,7 +20,7 @@ function syncLabel(s: SyncStatus): string {
     case 'synced':
       return `GitHub 동기화됨 · ${time(s.at)}`
     case 'readonly':
-      return '읽기 전용 · 토큰을 설정하면 GitHub에 저장돼요'
+      return '읽기 전용 · 비밀번호를 입력하면 기록할 수 있어요'
     case 'local':
       return s.detail ?? '이 기기에만 저장됨'
     case 'error':
@@ -29,7 +29,7 @@ function syncLabel(s: SyncStatus): string {
 }
 
 export default function App() {
-  const { visits, update, status, token, saveToken, refresh } = useSyncedVisits()
+  const { visits, update, status, password, savePassword, refresh } = useSyncedVisits()
   const [showSync, setShowSync] = useState(false)
   const [selectedId, setSelectedId] = useState<string>()
   const [editing, setEditing] = useState<Visit | 'new' | null>(null)
@@ -38,7 +38,7 @@ export default function App() {
   const [starOnly, setStarOnly] = useState(false)
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState<Sort>({ key: 'date', dir: 'desc' })
-  const [view, setView] = useState<{ mode: 'korea' | 'fit'; nonce: number }>({ mode: 'fit', nonce: 0 })
+  const [view, setView] = useState<{ mode: 'seoul' | 'fit'; nonce: number }>({ mode: 'fit', nonce: 0 })
   const [toast, setToast] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
 
@@ -191,10 +191,10 @@ export default function App() {
               내 기록
             </button>
             <button
-              className={view.mode === 'korea' ? 'on' : undefined}
-              onClick={() => setView((s) => ({ mode: 'korea', nonce: s.nonce + 1 }))}
+              className={view.mode === 'seoul' ? 'on' : undefined}
+              onClick={() => setView((s) => ({ mode: 'seoul', nonce: s.nonce + 1 }))}
             >
-              전국
+              서울 전체
             </button>
           </div>
         </div>
@@ -271,7 +271,7 @@ export default function App() {
             </button>
           ) : null}
           <button className="link-btn" onClick={() => setShowSync(true)}>
-            {token ? '동기화 설정' : 'GitHub 연결'}
+            {password ? '동기화 설정' : '비밀번호 입력'}
           </button>
           <button className="link-btn" onClick={exportJson}>
             백업 내보내기
@@ -308,11 +308,11 @@ export default function App() {
 
       {showSync ? (
         <SyncSettings
-          token={token}
-          onSave={(t) => {
-            saveToken(t)
+          password={password}
+          onSave={(pw) => {
+            savePassword(pw)
             setShowSync(false)
-            setToast(t ? 'GitHub에 연결했어요' : '토큰을 삭제했어요')
+            setToast(pw ? '이제 이 기기에서 기록할 수 있어요' : '비밀번호를 삭제했어요')
           }}
           onClose={closeSync}
         />
